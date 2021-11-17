@@ -5,12 +5,23 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "command": "cds run --with-mocks --in-memory?",
       "name": "cds run",
+      "type": "node",
       "request": "launch",
-      "type": "node-terminal",
-      "skipFiles": [ "<node_internals>/**" ],
-      "preLaunchTask": "build"
+      "program": "${workspaceFolder}/.vscode/cds",
+      "args": [
+        "run",
+        "--in-memory"
+      ], // the leading "--" arg ensures it works with as well as without debugging
+      "internalConsoleOptions": "openOnSessionStart",
+      "console": "internalConsole",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "autoAttachChildProcesses": true,
+      "outFiles": [
+        "${workspaceFolder}/srv/dist/**"
+      ]
     }
   ]
 }

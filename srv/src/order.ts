@@ -6,10 +6,9 @@ import { getTenantName } from "./helpers/axios";
 // @ts-ignore
 const LOG = cds.log('sql');
 
-
-export class OrderService extends cds.ApplicationService {
+class OrderService extends cds.ApplicationService {
     async init() {
-        this.before("READ", "Order", (req) =>{
+        this.before("READ", "Order", (req) => {
             // const HIPAxios = getHIPAxios(getTenantName(req));
             LOG.info("customerIds");
             const customerIds = Authorisation.getAuthorisation(getTenantName(req)).getCustomerIds(req); // Retrieve the customer IDs allowed to be used by the current user
@@ -18,7 +17,7 @@ export class OrderService extends cds.ApplicationService {
             // TODO write logic to retrieve all data from HIP
         });
         // Will run via the default on HANA DB
-        this.on("READ", "Order", (req)=>{
+        this.on("READ", "Order", (req) => {
             console.log("read");
             console.log(req.data);
         });
@@ -36,3 +35,5 @@ export class OrderService extends cds.ApplicationService {
 //         console.log(req.data);
 //     })
 // }
+
+module.exports = OrderService

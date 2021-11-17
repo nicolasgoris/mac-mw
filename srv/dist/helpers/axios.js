@@ -7,7 +7,7 @@ exports.getTenantName = exports.getHIPAxios = void 0;
 const sap_cf_axios_1 = __importDefault(require("sap-cf-axios"));
 class HIPAxios {
     constructor(subscribedDomain) {
-        HIPAxios.axios = sap_cf_axios_1.default('HIP_Orders', { subscribedDomain });
+        HIPAxios.axios = (0, sap_cf_axios_1.default)('HIP_Orders', { subscribedDomain });
     }
     static getAxios(subscribedDomain) {
         if (!HIPAxios.instance[subscribedDomain]) {
