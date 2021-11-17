@@ -9,7 +9,8 @@
       "name": "cds run",
       "request": "launch",
       "type": "node-terminal",
-      "skipFiles": [ "<node_internals>/**" ]
+      "skipFiles": [ "<node_internals>/**" ],
+      "preLaunchTask": "build"
     }
   ]
 }

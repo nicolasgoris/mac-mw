@@ -3,12 +3,10 @@ import { Request } from "@sap/cds/apis/services";
 export class Authorisation {
     private static instance: { [key: string]: Authorisation } = {};
     private static customerIds: { [key: string]: string[] } = {};
-    private constructor(subscribedDomain: string) {
-
-    }
+    private constructor() {}
     public static getAuthorisation(subscribedDomain: string) {
         if (!Authorisation.instance[subscribedDomain]) {
-            Authorisation.instance[subscribedDomain] = new Authorisation(subscribedDomain);
+            Authorisation.instance[subscribedDomain] = new Authorisation();
         }
         return Authorisation.instance[subscribedDomain];
     }

@@ -1,31 +1,34 @@
-import cds from "@sap/cds";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.OrderService = void 0;
+const cds_1 = __importDefault(require("@sap/cds"));
 // import { Request } from "@sap/cds/apis/services";
-import { Authorisation } from "./helpers/authorisation";
-import { getTenantName } from "./helpers/axios";
-
+const authorisation_1 = require("./helpers/authorisation");
+const axios_1 = require("./helpers/axios");
 // @ts-ignore
-const LOG = cds.log('sql');
-
-
-export class OrderService extends cds.ApplicationService {
+const LOG = cds_1.default.log('sql');
+class OrderService extends cds_1.default.ApplicationService {
     async init() {
-        this.before("READ", "Order", (req) =>{
+        this.before("READ", "Order", (req) => {
             // const HIPAxios = getHIPAxios(getTenantName(req));
             LOG.info("customerIds");
-            const customerIds = Authorisation.getAuthorisation(getTenantName(req)).getCustomerIds(req); // Retrieve the customer IDs allowed to be used by the current user
+            const customerIds = authorisation_1.Authorisation.getAuthorisation(axios_1.getTenantName(req)).getCustomerIds(req); // Retrieve the customer IDs allowed to be used by the current user
             console.error(customerIds);
             console.error(req.data);
             // TODO write logic to retrieve all data from HIP
         });
         // Will run via the default on HANA DB
-        this.on("READ", "Order", (req)=>{
+        this.on("READ", "Order", (req) => {
             console.log("read");
             console.log(req.data);
         });
         await super.init();
     }
 }
-
+exports.OrderService = OrderService;
 // module.exports = async (OrderService) => {
 //     OrderService.before('READ', 'Order', (req: Request) => {
 //         const customerIds = Authorisation.getAuthorisation(getTenantName(req)).getCustomerIds(req); // Retrieve the customer IDs allowed to be used by the current user
@@ -36,3 +39,4 @@ export class OrderService extends cds.ApplicationService {
 //         console.log(req.data);
 //     })
 // }
+//# sourceMappingURL=order.js.map

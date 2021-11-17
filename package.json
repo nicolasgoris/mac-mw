@@ -6,18 +6,27 @@
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {
-    "@sap/cds": "^5.6.2",
+    "@sap/cds": "^5.6.3",
     "express": "^4.17.1",
+    "passport": "^0.5.0",
     "sap-cf-axios": "^0.2.35"
   },
   "devDependencies": {
     "@types/node": "^16.11.7",
     "cds2types": "^2.6.2",
-    "npm-run-all": "^4.1.5"
+    "npm-run-all": "^4.1.5",
+    "sqlite3": "^5.0.2"
   },
   "scripts": {
     "start": "cds run",
-    "cds2types": "cds2types --cds ./srv/order.cds --output ./srv/src/definitions/order.ts --prefix I"
+    "cds2types": "cds2types --cds ./srv/order.cds --output ./srv/src/definitions/order.ts --prefix I",
+    "cftarget": "cf target -o AtasCopco_PT_MyAtlasCopco_DEV -s apps",
+    "build": "cds build/all --clean",
+    "build:mta": "mbt build --mtar=mac-mw.mtar",
+    "deploy:cf": "cf deploy mta_archives/mac-mw.mtar -f",
+    "deploy": "run-s build build:mta cftarget deploy:cf",
+    "start:local": "cd localapprouter && npm run start",
+    "build:typescript": "tsc"
   },
   "eslintConfig": {
     "extends": "eslint:recommended",
@@ -42,6 +51,38 @@
     "rules": {
       "no-console": "off",
       "require-atomic-updates": "off"
+    }
+  },
+  "cds": {
+    "query": {
+      "limit": {
+        "default": 20,
+        "max": 999
+      }
+    },
+    "requires": {
+      "db": {
+        "[development]": {
+          "kind": "sqlite",
+          "model": "*",
+          "credentials": {
+            "database": "useradmin.db"
+          }
+        },
+        "[production]": {
+          "kind": "hana",
+          "pool": {
+            "acquireTimeoutMilis": 5000,
+            "max": 1000
+          }
+        }
+      },
+      "auth": {
+        "kind": "xsuaa-auth"
+      }
+    },
+    "hana": {
+      "deploy-format": "hdbtable"
     }
   }
 }

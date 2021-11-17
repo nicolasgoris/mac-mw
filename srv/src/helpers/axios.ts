@@ -4,7 +4,7 @@ class HIPAxios {
     private static instance: { [key: string]: HIPAxios } = {};
     private static axios: <T>(req: AxiosRequestConfig) => Promise<AxiosResponse<T>>;
     private constructor(subscribedDomain: string) {
-        HIPAxios.axios = SapCfAxios('HIP_API', { subscribedDomain });
+        HIPAxios.axios = SapCfAxios('HIP_Orders', { subscribedDomain });
     }
     public static getAxios(subscribedDomain: string) {
         if (!HIPAxios.instance[subscribedDomain]) {
