@@ -1,5 +1,5 @@
 {
-    "welcomeFile": "/apps/usermgmt/index.html",
+    "welcomeFile": "/srv_api/order/$metadata",
     "authenticationMethod": "route",
     "logout": {
         "logoutEndpoint": "/do/logout"
