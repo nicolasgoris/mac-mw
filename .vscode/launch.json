@@ -21,7 +21,8 @@
       "autoAttachChildProcesses": true,
       "outFiles": [
         "${workspaceFolder}/srv/dist/**"
-      ]
+      ],
+      "preLaunchTask": "build"
     }
   ]
 }
