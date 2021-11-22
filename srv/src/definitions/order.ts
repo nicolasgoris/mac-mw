@@ -1,137 +1,131 @@
-export namespace Order {
+export namespace mac.mw.order {
     export interface IAddress {
-        id: string;
         name: string;
-        street1: string;
-        houseNumber: string;
-        city: string;
-        region: string;
-        regionCode: string;
-        country: string;
-        countryCode: string;
-        postalCode: string;
+        Street: string;
+        Number: string;
+        City: string;
+        Zip: string;
+        Country: string;
     }
 
-    export interface IAddresses {
-        orderDocumentSAP: string;
-        soldTo: IAddress;
-        billTo: IAddress;
-        payer: IAddress;
-        shipTo: IAddress;
-        endCustomer: IAddress;
-    }
-
-    export interface ILineItem {
-        orderDocumentSAP: string;
-        position: number;
-        sku: string;
-        name: string;
-        quantity: number;
-        unitOfMeasurement: string;
-        status: string;
-        estimatedDeliveryDate: Date;
-        discounts: unknown[];
-        listPrice: number;
-        listPriceTotal: number;
-        netPrice: number;
-        netPriceTotal: number;
-        currency: string;
-    }
-
-    export interface IOrder {
-        orderDocumentSAP: string;
-        soldTo: string;
-        salesOrg: string;
-        fromDate: string;
-        toDate: string;
-        endCustomer: string;
-        orderType: string;
-        orderCustomerRef: string;
-        orderDate: Date;
-        totalItems: number;
-        totalValue: number;
-        currency: string;
-        status: string;
-        orderHeader?: IOrderHeader;
-        orderHeader_orderDocumentSAP?: string;
-        orderTotal?: IOrderTotal;
-        orderTotal_orderDocumentSAP?: string;
-        addresses?: IAddresses;
-        addresses_orderDocumentSAP?: string;
-        lineItems?: ILineItem[];
-        shipments?: IShipment[];
-        payment?: IPayment;
-        payment_orderDocumentSAP?: string;
-    }
-
-    export interface IOrderHeader {
-        salesOrg: string;
-        division: string;
-        distributionChannel: string;
-        orderDocumentNo: string;
-        orderDocumentSAP: string;
-        orderCustomerRef: string;
-        orderDate: Date;
-        comment: string;
-        requestedDeliveryDate: Date;
-        orderStatus: string;
-    }
-
-    export interface IOrderTotal {
-        orderDocumentSAP: string;
-        itemTotal: number;
-        deliveryTotal: number;
-        discounts: unknown[];
-        totalTaxesAndFees: number;
-        orderListTotal: number;
-        orderNetTotal: number;
-        currency: string;
-    }
-
-    export interface IPackage {
-        orderDocumentSAP: string;
+    export interface ICustomer {
+        logonName: string;
         id: string;
-        trackingNumber: string;
-        trackingLink: string;
-        items: unknown[];
+        salesOrg: string;
     }
 
-    export interface IPayment {
-        orderDocumentSAP: string;
-        method: string;
-        paymentTerms: string;
-        invoiceLink: unknown[];
+    export interface IDelivery {
+        Date: Date;
+        Status: string;
+        ExpectedDeliveryDate: Date;
+        TrackingNr: string;
+        TrackingUrl: string;
     }
 
-    export interface IShipment {
-        orderDocumentSAP: string;
-        id: string;
-        invoiceNumber: string;
-        shipmentDate: Date;
+    export interface IDeliveryItem {
+        MaterialNr: string;
+        MaterialDescription: string;
+        Quantity: number;
     }
 
     export enum Entity {
-        Address = "Order.Address",
-        Addresses = "Order.Addresses",
-        LineItem = "Order.LineItem",
-        Order = "Order.Order",
-        OrderHeader = "Order.OrderHeader",
-        OrderTotal = "Order.OrderTotal",
-        Package = "Order.Package",
-        Payment = "Order.Payment",
-        Shipment = "Order.Shipment"
+        Address = "mac.mw.order.Address",
+        Customer = "mac.mw.order.Customer",
+        Delivery = "mac.mw.order.Delivery",
+        DeliveryItem = "mac.mw.order.DeliveryItem"
     }
 
     export enum SanitizedEntity {
         Address = "Address",
-        Addresses = "Addresses",
-        LineItem = "LineItem",
+        Customer = "Customer",
+        Delivery = "Delivery",
+        DeliveryItem = "DeliveryItem"
+    }
+}
+
+export namespace Order {
+    export interface ICustomer {
+        logonName: string;
+        id: string;
+        salesOrg: string;
+    }
+
+    export interface IOrder {
+        OrderNr: string;
+        OrderDate: Date;
+        WebOrder: boolean;
+        Status: string;
+        ExpectedDeliveryDate: Date;
+        CustomerReference: string;
+        SoldTo: string;
+        ShipToCountry: string;
+        ShipToCity: string;
+        TotalAmount: number;
+        TotalCurrency: string;
+        CreatedBy: string;
+        LineItems?: IOrderLineItem;
+        LineItems_OrderNr?: string;
+        LineItems_Position?: number;
+    }
+
+    export interface IOrderLineItem {
+        OrderNr: string;
+        Position: number;
+        MaterialNr: string;
+        MaterialDescription: string;
+        Quantity: number;
+        UnitOfMeasure: string;
+        ListPrice: number;
+        DiscountPercentage: number;
+        DiscountAmount: number;
+        NetPrice: number;
+        TotalAmount: number;
+        Currency: string;
+    }
+
+    export interface IOrder {
+        OrderNr: string;
+        OrderDate: Date;
+        WebOrder: boolean;
+        Status: string;
+        ExpectedDeliveryDate: Date;
+        CustomerReference: string;
+        SoldTo: string;
+        ShipToCountry: string;
+        ShipToCity: string;
+        TotalAmount: number;
+        TotalCurrency: string;
+        CreatedBy: string;
+        LineItems?: IOrderLineItem;
+        LineItems_OrderNr?: string;
+        LineItems_Position?: number;
+    }
+
+    export interface IOrderLineItem {
+        OrderNr: string;
+        Position: number;
+        MaterialNr: string;
+        MaterialDescription: string;
+        Quantity: number;
+        UnitOfMeasure: string;
+        ListPrice: number;
+        DiscountPercentage: number;
+        DiscountAmount: number;
+        NetPrice: number;
+        TotalAmount: number;
+        Currency: string;
+    }
+
+    export enum Entity {
+        Customer = "Order.Customer",
+        Order = "mac.mw.order.Order",
+        OrderLineItem = "mac.mw.order.OrderLineItem"
+    }
+
+    export enum SanitizedEntity {
+        Customer = "Customer",
         Order = "Order",
-        OrderHeader = "OrderHeader",
-        OrderTotal = "OrderTotal",
-        Package = "Package",
-        Payment = "Payment",
-        Shipment = "Shipment"
+        OrderLineItem = "OrderLineItem"
     }
 }
 

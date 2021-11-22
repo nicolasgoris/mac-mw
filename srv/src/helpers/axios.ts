@@ -1,21 +1,39 @@
 import SapCfAxios, { AxiosRequestConfig, AxiosResponse } from "sap-cf-axios";
 
-class HIPAxios {
-    private static instance: { [key: string]: HIPAxios } = {};
+class HIPOrder {
+    private static instance: { [key: string]: HIPOrder } = {};
     private static axios: <T>(req: AxiosRequestConfig) => Promise<AxiosResponse<T>>;
     private constructor(subscribedDomain: string) {
-        HIPAxios.axios = SapCfAxios('HIP_Orders', { subscribedDomain });
+        HIPOrder.axios = SapCfAxios('HIP_Orders', { subscribedDomain });
     }
     public static getAxios(subscribedDomain: string) {
-        if (!HIPAxios.instance[subscribedDomain]) {
-            HIPAxios.instance[subscribedDomain] = new HIPAxios(subscribedDomain);
+        if (!HIPOrder.instance[subscribedDomain]) {
+            HIPOrder.instance[subscribedDomain] = new HIPOrder(subscribedDomain);
         }
-        return HIPAxios.axios;
+        return HIPOrder.axios;
     }
 }
 
-export function getHIPAxios(subscribedDomain: any | string) {
-    return HIPAxios.getAxios(getTenantName(subscribedDomain));
+class UserMgmt {
+    private static instance: { [key: string]: UserMgmt } = {};
+    private static axios: <T>(req: AxiosRequestConfig) => Promise<AxiosResponse<T>>;
+    private constructor(subscribedDomain: string) {
+        UserMgmt.axios = SapCfAxios('MAC_USERAPI', { subscribedDomain });
+    }
+    public static getAxios(subscribedDomain: string) {
+        if (!UserMgmt.instance[subscribedDomain]) {
+            UserMgmt.instance[subscribedDomain] = new UserMgmt(subscribedDomain);
+        }
+        return UserMgmt.axios;
+    }
+}
+
+export function getHIPOrderAxios(subscribedDomain: any | string) {
+    return HIPOrder.getAxios(getTenantName(subscribedDomain));
+}
+
+export function getUserMgmtAxios(subscribedDomain: any | string) {
+    return UserMgmt.getAxios(getTenantName(subscribedDomain));
 }
 
 export function getTenantName(subscribedDomain: any | string) {
