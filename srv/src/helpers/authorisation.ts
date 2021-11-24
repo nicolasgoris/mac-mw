@@ -1,6 +1,5 @@
 import { Request } from "@sap/cds/apis/services";
 import { Order } from "../definitions/order";
-import cds from "@sap/cds";
 import { getUserMgmtAxios } from "./axios";
 
 const RegEx = {
@@ -17,7 +16,7 @@ const RegEx = {
 export class Authorisation {
     // private static instance: { [key: string]: Authorisation } = {};
     private static instance: Authorisation;
-    private static customerIds: { [key: string]: Order.ICustomer[] } = {};
+    // private static customerIds: { [key: string]: Order.ICustomer[] } = {};
     private constructor() { }
     // public static getAuthorisation(subscribedDomain: string) {
     public static getAuthorisation() {
@@ -30,25 +29,25 @@ export class Authorisation {
     public async getCustomers(req: Request): Promise<Order.ICustomer[]> {
         // @ts-ignore
         const userId = req.user.id !== "" ? req.user.id : req.req.authInfo.getLogonName();
-        if (!Authorisation.customerIds[userId]) {
-            const UserMgmtAxiois = getUserMgmtAxios(req);
-            try {
-                const token = req.user.attr.appToken; // req.user._req.authInfo.getAppToken()
-                const answer: any = await UserMgmtAxiois({
-                    method: 'GET',
-                    url: `/user/Users(%27me%27)?$expand=organisations`,
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                });
-                const organisations = answer.data.organisations.filter(o => o.type === 'CUSTOMER').map(o => ({ logonName: userId, id: o.id, salesOrg: o.lineage }));
-                Authorisation.customerIds[userId] = organisations;
-            } catch (e) {
-                throw Object.assign(new Error(`Retrieving the customers for the current user failed.`), { cause: e });
-            }
-            // Authorisation.customerIds[userId] = [{ logonName: userId, id: '100326076', salesOrg: 'BE40' }]; // Retrieve the customers for the given user
+        // if (!Authorisation.customerIds[userId]) {
+        const UserMgmtAxiois = getUserMgmtAxios(req);
+        try {
+            const token = req.user.attr.appToken;
+            const answer: any = await UserMgmtAxiois({
+                method: 'GET',
+                url: `/user/Users(%27me%27)?$expand=organisations`,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+            });
+            return answer.data.organisations.filter(o => o.type === 'CUSTOMER').map(o => ({ logonName: userId, id: o.id, salesOrg: o.lineage }));
+            // const organisations = answer.data.organisations.filter(o => o.type === 'CUSTOMER').map(o => ({ logonName: userId, id: o.id, salesOrg: o.lineage }));
+            // Authorisation.customerIds[userId] = organisations;
+        } catch (e) {
+            throw Object.assign(new Error(`Retrieving the customers for the current user (${userId}) failed.`), { cause: e });
         }
-        return Authorisation.customerIds[userId];
+        // }
+        // return [Authorisation.customerIds[userId]];
     }
 
     public async checkCustomerIsAllowed(req: Request): Promise<Order.ICustomer | undefined> {
@@ -59,23 +58,14 @@ export class Authorisation {
                 filter = req._queryOptions.$filter,
                 customerId = filter.match(RegEx.soldTo.getFilter)[0].match(RegEx.soldTo.getId)[0],
                 salesOrg = filter.match(RegEx.salesOrg.getFilter)[0].match(RegEx.salesOrg.getId)[0];
-            return customers.find(c => c.id+'6' === customerId && c.salesOrg === salesOrg);
+            return customers.find(c => c.id === customerId && c.salesOrg === salesOrg);
         } else {
-            throw new Error(`No filter data present.`);
+            req.reject(400, `No customer information is present.`);
         }
+        return;
     }
 
     public fillCustomers = async (req: Request): Promise<Order.ICustomer[]> => {
         return await Authorisation.instance.getCustomers(req);
-        // const customers = await Authorisation.instance.getCustomers(req),
-        //     db = await cds.connect.to('db');
-        // try {
-        //     const result = await db.tx(req).run(INSERT.into(db.entities['Order.Customer']).entries(customers));
-        //     //'SQLITE_ERROR: no such table: mac_mw_order_Customer in: \nINSERT INTO mac_mw_order_Customer ( logonName, id, salesOrg ) VALUES ( ?, ?, ? )'
-        //     return customers;
-        // } catch (error) {
-        //     console.error('Error');
-        //     return [];
-        // }
     }
 }

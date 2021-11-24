@@ -8,7 +8,7 @@ entity Customer {
 
 entity Orders {
     key OrderNr              : String;
-        OrderDate            : Date;
+        OrderDate            : Timestamp;
         WebOrder             : Boolean;
         Status               : String;
         ExpectedDeliveryDate : Date;
@@ -20,6 +20,9 @@ entity Orders {
         TotalAmount          : DecimalFloat;
         TotalCurrency        : String;
         CreatedBy            : String;
+        LastModified         : Timestamp
+            @cds.on.insert : $now
+            @cds.on.update : $now;
         Details              : Association to OrderDetails;
 }
 

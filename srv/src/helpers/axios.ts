@@ -1,41 +1,37 @@
 import SapCfAxios, { AxiosRequestConfig, AxiosResponse } from "sap-cf-axios";
 
 class HIPOrder {
-    private static instance: { [key: string]: HIPOrder } = {};
-    private static axios: <T>(req: AxiosRequestConfig) => Promise<AxiosResponse<T>>;
-    private constructor(subscribedDomain: string) {
-        HIPOrder.axios = SapCfAxios('HIP_Orders', { subscribedDomain });
+    private static instance: HIPOrder;
+    private axios: <T>(req: AxiosRequestConfig) => Promise<AxiosResponse<T>>;
+    private constructor() {
+        this.axios = SapCfAxios('HIP_Orders');
     }
-    public static getAxios(subscribedDomain: string) {
-        if (!HIPOrder.instance[subscribedDomain]) {
-            HIPOrder.instance[subscribedDomain] = new HIPOrder(subscribedDomain);
+    public static getAxios() {
+        if (!HIPOrder.instance) {
+            HIPOrder.instance = new HIPOrder();
         }
-        return HIPOrder.axios;
+        return HIPOrder.instance.axios;
     }
 }
 
 class UserMgmt {
-    private static instance: { [key: string]: UserMgmt } = {};
-    private static axios: <T>(req: AxiosRequestConfig) => Promise<AxiosResponse<T>>;
-    private constructor(subscribedDomain: string) {
-        UserMgmt.axios = SapCfAxios('MAC_USERAPI', { subscribedDomain });
+    private static instance: UserMgmt;
+    private axios: <T>(req: AxiosRequestConfig) => Promise<AxiosResponse<T>>;
+    private constructor() {
+        this.axios = SapCfAxios('MAC_USERAPI');
     }
-    public static getAxios(subscribedDomain: string) {
-        if (!UserMgmt.instance[subscribedDomain]) {
-            UserMgmt.instance[subscribedDomain] = new UserMgmt(subscribedDomain);
+    public static getAxios() {
+        if (!UserMgmt.instance) {
+            UserMgmt.instance = new UserMgmt();
         }
-        return UserMgmt.axios;
+        return UserMgmt.instance.axios;
     }
 }
 
 export function getHIPOrderAxios(subscribedDomain: any | string) {
-    return HIPOrder.getAxios(getTenantName(subscribedDomain));
+    return HIPOrder.getAxios();
 }
 
 export function getUserMgmtAxios(subscribedDomain: any | string) {
-    return UserMgmt.getAxios(getTenantName(subscribedDomain));
-}
-
-export function getTenantName(subscribedDomain: any | string) {
-    return typeof subscribedDomain === 'string' ? subscribedDomain : subscribedDomain.req.authInfo.getSubdomain() || "default";
+    return UserMgmt.getAxios();
 }

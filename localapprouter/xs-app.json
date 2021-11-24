@@ -1,16 +1,13 @@
 {
-    "welcomeFile": "/srv_api/order/$metadata",
-    "authenticationMethod": "route",
-    "logout": {
-        "logoutEndpoint": "/do/logout"
-    },
-    "routes": [
-        {
-            "source": "^/srv_api/(.*)$",
-            "target": "$1",
-            "authenticationType": "xsuaa",
-            "destination": "srv_api",
-            "csrfProtection": false
-        }
-    ]
+  "welcomeFile": "/srv_api/order/$metadata",
+  "authenticationMethod": "route",
+  "routes": [
+    {
+      "source": "^/srv_api/(.*)$",
+      "target": "$1",
+      "authenticationType": "xsuaa",
+      "destination": "srv_api",
+      "csrfProtection": false
+    }
+  ]
 }
