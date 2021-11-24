@@ -8,6 +8,7 @@
   "dependencies": {
     "@sap/cds": "^5.6.3",
     "express": "^4.17.1",
+    "hdb": "^0.19.0",
     "passport": "^0.5.0",
     "sap-cf-axios": "^0.2.35"
   },
@@ -18,7 +19,7 @@
     "sqlite3": "^5.0.2"
   },
   "engines": {
-    "node": "14.17.0"
+    "node": "~14.17.0"
   },
   "scripts": {
     "start": "cds run",
@@ -27,7 +28,7 @@
     "build": "cds build/all --clean",
     "build:mta": "mbt build --mtar=mac-mw.mtar",
     "deploy:cf": "cf deploy mta_archives/mac-mw.mtar -f",
-    "deploy": "run-s build build:mta cftarget deploy:cf",
+    "deploy": "run-s build:typescript build build:mta cftarget deploy:cf",
     "start:local": "cd localapprouter && npm run start",
     "build:typescript": "tsc"
   },
@@ -67,9 +68,8 @@
       "db": {
         "[development]": {
           "kind": "sqlite",
-          "model": "*",
           "credentials": {
-            "database": "useradmin.db"
+            "database": "db/sqlite.db"
           }
         },
         "[production]": {

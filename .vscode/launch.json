@@ -10,8 +10,9 @@
       "request": "launch",
       "program": "${workspaceFolder}/.vscode/cds",
       "args": [
-        "run",
-        "--in-memory"
+        "run"
+        // "run",
+        // "--in-memory"
       ], // the leading "--" arg ensures it works with as well as without debugging
       "internalConsoleOptions": "openOnSessionStart",
       "console": "internalConsole",
