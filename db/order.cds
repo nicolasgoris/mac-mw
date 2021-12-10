@@ -1,90 +1,121 @@
 namespace mac.mw.order;
 
-entity Customer {
-    key logonName : String;
-    key id        : String;
-    key salesOrg  : String;
-}
-
 entity Orders {
     key OrderNr              : String;
         OrderDate            : Timestamp;
-        WebOrder             : Boolean;
+        WebOrder             : Boolean; // Not available yet
         Status               : String;
-        ExpectedDeliveryDate : Date;
+        ExpectedDeliveryDate : Date; // Not available yet
         CustomerReference    : String;
         SalesOrg             : String;
         SoldTo               : String;
-        ShipToCountry        : String;
-        ShipToCity           : String;
+        SoldToName           : String;
+        ShipToCountry        : String; // Not available yet
+        ShipToCity           : String; // Not available yet
         TotalAmount          : DecimalFloat;
         TotalCurrency        : String;
-        CreatedBy            : String;
+        CreatedBy            : String; // Not available yet
         LastModified         : Timestamp
             @cds.on.insert : $now
             @cds.on.update : $now;
-        Details              : Association to OrderDetails;
+        DeliveryInformation  : Address;
+        SalesInformation     : Address;
+        PaymentInformation   : PaymentInformation;
+        LineItems            : Composition of many LineItems
+                                   on LineItems.Order = $self;
+        Deliveries           : Composition of many Deliveries
+                                   on Deliveries.Order = $self;
+        Invoices             : Composition of many Invoices
+                                   on Invoices.Order = $self;
+// LineItems            : Association to many LineItems
+//                            on LineItems.OrderNr = $self.OrderNr;
+// Deliveries           : Association to many Deliveries
+//                            on Deliveries.OrderNr = $self.OrderNr;
+// Invoices             : Association to many Invoices
+//                            on Invoices.OrderNr = $self.OrderNr;
+// Details              : Association to one OrderDetails
+//                            on Details.OrderNr = $self.OrderNr;
 }
 
-entity OrderDetails {
-    key OrderNr             : String;
-        LineItems           : Association to LineItems;
-        Deliveries          : Association to Deliveries;
-        DeliveryInformation : Association to Address;
-        SalesInformation    : Association to Address;
-        PaymentInformation  : Association to Address;
-        Invoices            : Association to Invoices;
+type PaymentInformation : Address {
+    Currency     : String;
+    PaymentTerms : String;
 }
+
+// entity OrderDetails {
+//     key OrderNr      : String;
+//         // DeliveryInformation : Association to one Address
+//         //                           on DeliveryInformation.OrderNr = $self.OrderNr;
+//         // SalesInformation    : Association to one Address
+//         //                           on SalesInformation.OrderNr = $self.OrderNr;
+//         // PaymentInformation  : Association to one Address
+//         //                           on PaymentInformation.OrderNr = $self.OrderNr;
+//         LastModified : Timestamp
+//             @cds.on.insert : $now
+//             @cds.on.update : $now;
+// }
 
 entity LineItems {
-    key OrderNr             : String;
+    key Order               : Association to Orders;
     key Position            : Integer;
-        MaterialNr          : String;
+        MaterialNr          : String(18);
         MaterialDescription : String;
         Quantity            : Integer;
-        UnitOfMeasure       : String;
+        UnitOfMeasure       : String(2);
         ListPrice           : Integer;
         DiscountPercentage  : Integer;
         DiscountAmount      : Integer;
         NetPrice            : Integer;
         TotalAmount         : Integer;
-        Currency            : String;
+        Currency            : String(3);
 }
 
 entity Deliveries {
-    key OrderNr              : String;
-        Date                 : Date;
-        Status               : String;
-        ExpectedDeliveryDate : Date;
-        TrackingNr           : String;
-        TrackingUrl          : String;
-        Items                : Association to DeliveryItems;
+    key Order       : Association to Orders;
+    key TrackingNr  : String;
+        Date        : Date;
+        // Status               : String; // Not available yet
+        // ExpectedDeliveryDate : Date; // Not available yet
+        TrackingUrl : String;
+        Items       : Composition of many DeliveryItems
+                          on Items.Delivery = $self;
 }
 
 entity DeliveryItems {
-    key OrderNr             : String;
-    key DeliveryDate        : Date;
-        MaterialNr          : String;
+    key Delivery            : Association to Deliveries;
+    key MaterialNr          : String;
+        // DeliveryDate        : Date; // Not available yet
         MaterialDescription : String;
         Quantity            : Integer;
 }
 
 entity Invoices {
-    key OrderNr       : String;
-        InvoiceNr     : String;
-        InvoiceUrl    : String;
-        InvoiceBase64 : String;
+    key Order      : Association to Orders;
+    key InvoiceNr  : String;
+        InvoiceUrl : String;
+        InvoicePdf : String;
 }
 
-entity Address {
-    key OrderNr : String;
-        Id      : String;
-        Name    : String;
-        Street  : String;
-        Number  : String;
-        City    : String;
-        Zip     : String;
-        Country : String;
+// entity Address {
+//     key OrderNr : String;
+//         Id      : String;
+//         Name    : String;
+//         Street  : String;
+//         Number  : String;
+//         City    : String;
+//         Zip     : String;
+//         Country : String;
+// }
+
+type Address {
+    Id          : String;
+    Name        : String;
+    Street      : String;
+    Number      : String;
+    City        : String;
+    Zip         : String;
+    Country     : String;
+    CountryCode : String;
 }
 
 // entity Order {

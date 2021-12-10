@@ -14,6 +14,20 @@ class HIPOrder {
     }
 }
 
+class HIPInvoice {
+    private static instance: HIPInvoice;
+    private axios: <T>(req: AxiosRequestConfig) => Promise<AxiosResponse<T>>;
+    private constructor() {
+        this.axios = SapCfAxios('HIP_Invoices');
+    }
+    public static getAxios() {
+        if (!HIPInvoice.instance) {
+            HIPInvoice.instance = new HIPInvoice();
+        }
+        return HIPInvoice.instance.axios;
+    }
+}
+
 class UserMgmt {
     private static instance: UserMgmt;
     private axios: <T>(req: AxiosRequestConfig) => Promise<AxiosResponse<T>>;
@@ -28,10 +42,14 @@ class UserMgmt {
     }
 }
 
-export function getHIPOrderAxios(subscribedDomain: any | string) {
+export function getHIPOrderAxios() {
     return HIPOrder.getAxios();
 }
 
-export function getUserMgmtAxios(subscribedDomain: any | string) {
+export function getHIPInvoiceAxios() {
+    return HIPInvoice.getAxios();
+}
+
+export function getUserMgmtAxios() {
     return UserMgmt.getAxios();
 }

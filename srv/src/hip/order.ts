@@ -94,4 +94,7 @@ export namespace hip {
         countryCode: string;
         postalCode: string;
     }
+    export interface IInvoice {
+        
+    }
 }

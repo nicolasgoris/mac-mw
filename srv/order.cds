@@ -3,26 +3,37 @@ using mac.mw.order as order from '../db/order';
 @impl : './dist/order.js'
 service Order @(requires : 'authenticated-user') {
     @readonly
-    entity Customer           as projection on order.Customer;
+    entity Customer {
+        UserName   : String;
+        SoldTo     : String;
+        SoldToName : String;
+        SalesOrg   : String;
+    };
 
     @readonly
-    entity Order              as projection on order.Orders;
+    entity Status {
+        Status : String;
+    }
 
     @readonly
-    entity OrderDetails       as projection on order.OrderDetails;
+    entity Order      as projection on order.Orders excluding {
+        WebOrder,
+        ExpectedDeliveryDate,
+        ShipToCountry,
+        ShipToCity,
+        CreatedBy,
+        LastModified
+    };
 
-    @readonly
-    entity LineItem           as projection on order.LineItems;
+    // @readonly
+    // entity LineItem   as projection on order.LineItems;
 
-    @readonly
-    entity Invoices           as projection on order.Invoices;
+    // @readonly
+    // entity Invoice   as projection on order.Invoices;
 
-    @readonly
-    entity Deliveries         as projection on order.Deliveries;
+    // @readonly
+    // entity Deliverie as projection on order.Deliveries;
 
-    @readonly
-    entity Items              as projection on order.DeliveryItems;
-
-    @readonly
-    entity PaymentInformation as projection on order.Address;
+    // @readonly
+    // entity Item      as projection on order.DeliveryItems;
 }
