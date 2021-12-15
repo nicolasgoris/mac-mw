@@ -25,6 +25,7 @@
   "scripts": {
     "start": "cds run",
     "cds2types": "cds2types --cds ./srv/order.cds --output ./srv/src/definitions/order.ts --prefix I",
+    "cds2types:invoices": "cds2types --cds ./srv/invoices.cds --output ./srv/src/definitions/invoices.ts --prefix I",
     "build": "run-s build:typescript build:cds build:mta",
     "build:cds": "cds build/all --clean",
     "build:mta": "mbt build --mtar=mac-mw.mtar",
