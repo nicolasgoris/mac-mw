@@ -12,8 +12,7 @@ export namespace iam {
         canSeePrices: boolean;
         id: string;
         name: string;
-        salesOrganisation_id: string;
-        type: string;
+        salesOrganisation: string;
         user_id: string
     }
     export interface Role {

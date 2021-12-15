@@ -5,7 +5,7 @@ entity Orders {
         OrderDate            : Timestamp;
         WebOrder             : Boolean; // Not available yet
         Status               : String;
-        ExpectedDeliveryDate : Date; // Not available yet
+        ExpectedDeliveryDate : Timestamp; // Not available yet
         CustomerReference    : String;
         SalesOrg             : String;
         SoldTo               : String;
@@ -27,33 +27,12 @@ entity Orders {
                                    on Deliveries.Order = $self;
         Invoices             : Composition of many Invoices
                                    on Invoices.Order = $self;
-// LineItems            : Association to many LineItems
-//                            on LineItems.OrderNr = $self.OrderNr;
-// Deliveries           : Association to many Deliveries
-//                            on Deliveries.OrderNr = $self.OrderNr;
-// Invoices             : Association to many Invoices
-//                            on Invoices.OrderNr = $self.OrderNr;
-// Details              : Association to one OrderDetails
-//                            on Details.OrderNr = $self.OrderNr;
 }
 
 type PaymentInformation : Address {
     Currency     : String;
     PaymentTerms : String;
 }
-
-// entity OrderDetails {
-//     key OrderNr      : String;
-//         // DeliveryInformation : Association to one Address
-//         //                           on DeliveryInformation.OrderNr = $self.OrderNr;
-//         // SalesInformation    : Association to one Address
-//         //                           on SalesInformation.OrderNr = $self.OrderNr;
-//         // PaymentInformation  : Association to one Address
-//         //                           on PaymentInformation.OrderNr = $self.OrderNr;
-//         LastModified : Timestamp
-//             @cds.on.insert : $now
-//             @cds.on.update : $now;
-// }
 
 entity LineItems {
     key Order               : Association to Orders;
@@ -73,7 +52,7 @@ entity LineItems {
 entity Deliveries {
     key Order       : Association to Orders;
     key TrackingNr  : String;
-        Date        : Date;
+        Date        : Timestamp;
         // Status               : String; // Not available yet
         // ExpectedDeliveryDate : Date; // Not available yet
         TrackingUrl : String;
@@ -93,7 +72,11 @@ entity Invoices {
     key Order      : Association to Orders;
     key InvoiceNr  : String;
         InvoiceUrl : String;
-        InvoicePdf : String;
+        // InvoicePdf : String;
+        // @Core.MediaType                   : 'application/pdf'
+        // @Core.ContentDisposition.Filename : InvoiceUrl
+        // Pdf        : LargeBinary;
+// Invoice als Binary PDF
 }
 
 // entity Address {

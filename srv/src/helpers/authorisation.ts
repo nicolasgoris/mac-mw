@@ -29,7 +29,7 @@ export class Authorisation {
                     'Authorization': `Bearer ${token}`
                 },
             });
-            return answer.data.customers.filter(c => c.type === 'DIRECT').map((c) => ({ UserName: userId, SoldTo: c.id, SoldToName: c.name, SalesOrg: c.salesOrganisation_id }));
+            return answer.data.customers.map((c) => ({ UserName: userId, SoldTo: c.id, SoldToName: c.name, SalesOrg: c.salesOrganisation }));
         } catch (error) {
             if (error instanceof Error) {
                 const e: Error = <any>error;
@@ -64,7 +64,8 @@ export class Authorisation {
         return;
     }
 
-    public checkOrderIsAllowed = async (req: Request, OrderNr: any): Promise<boolean> => {
-        return true; // TODO check if the current user has access to this order. How to check??
+    public checkOrderIsAllowed = async (req: Request, SoldTo: string): Promise<Order.ICustomer | undefined> => {
+        const customers = await Authorisation.instance.getCustomers(req);
+        return customers.find(c => parseInt(c.SoldTo) === parseInt(SoldTo));
     }
 }

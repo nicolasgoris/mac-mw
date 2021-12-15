@@ -55,7 +55,12 @@ export namespace Order {
         Order_OrderNr?: string;
         InvoiceNr: string;
         InvoiceUrl: string;
-        InvoicePdf: string;
+        // Pdf: string;
+    }
+
+    export interface IInvoice {
+        Order_OrderNr: string;
+        InvoiceNr: string;
     }
 
     export interface ILineItems {

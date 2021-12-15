@@ -4,7 +4,6 @@ import { Authorisation } from "./helpers/authorisation";
 import { getHIPInvoiceAxios, getHIPOrderAxios } from "./helpers/axios";
 import { Order } from "./definitions/order";
 import { hip } from "./hip/order";
-import { AxiosResponse } from "sap-cf-axios";
 import { OrderError, ErrorType } from "./helpers/error";
 
 const RegEx = {
@@ -43,7 +42,7 @@ class OrderService extends cds.ApplicationService {
             try {
                 const { OrderNr } = req.data;
                 /* Check if the request is for one order and if the user has access to retrieve that order */
-                if (OrderNr && await Authorisation.getAuthorisation().checkOrderIsAllowed(req, OrderNr)) {
+                if (OrderNr) {
                     const order = await getOrderDetails(req, OrderNr);
                 } else {
                     const status = getFilterStatus(req);
@@ -68,6 +67,31 @@ class OrderService extends cds.ApplicationService {
                 };
             }
         });
+        // this.on("setPrimary", async (req) => {
+        //     const db = await cds.connect.to('db')
+        //     let membership = await db.tx(req).run(req.query)
+        //     membership = asObject(membership)
+        //     const membershipObj = new CustomerMembership(membership.user_id!, membership.customer_id!, req)
+        //     await membershipObj.setPrimary();
+        //     return membership;
+        // })
+        // this.on('getInvoice', async (req: Request) => {
+        //     if (typeof req.params[1] === 'object') {
+
+        //         return getInvoice(req, Order_OrderNr, InvoiceNr);
+        //     }
+        // });
+        // this.on("READ", "Invoices", async (req: Request) => {
+        //     const { Order_OrderNr, InvoiceNr } = (req.params[1]) as Order.IInvoice;
+        //     console.log(`${Order_OrderNr} - ${InvoiceNr}`)
+        //     if (Order_OrderNr && InvoiceNr) {
+        //         return {
+        //             value: await getInvoice(req, Order_OrderNr, InvoiceNr),
+        //             '*@odata.mediaContentType': 'application/pdf'
+        //         }
+        //     }
+        //     return true;
+        // });
         await super.init();
     }
 }
@@ -158,9 +182,11 @@ const getOrderDetails = async (req: Request, OrderNumber: string) => {
     // }
 }
 const updateOrderDetails = async (req: Request, orderNr: string) => {
-    const hipOrder = await getOrderDetailsFromAPI(req, orderNr);
-    if (hipOrder) {
-        const order = await enrichWithInvoices(transformToDetails(hipOrder));
+    const hipOrder = await getOrderDetailsFromAPI(req, orderNr),
+        soldToId: string = hipOrder?.addresses ? hipOrder?.addresses.soldTo.id : '',
+        customer = await Authorisation.getAuthorisation().checkOrderIsAllowed(req, soldToId);
+    if (hipOrder && customer) {
+        const order = await enrichWithInvoices(transformToDetails(hipOrder, customer));
         // await deleteOrderDetails(req, orderNr);
         await insertOrderDetails(req, orderNr, order);
     }
@@ -220,6 +246,52 @@ const insertOrderDetails = async (req: Request, orderNr: string, order: Order.IO
     }
 }
 
+const getInvoice = async (req: Request, OrderNr: string, InvoiceNr: string): Promise<any> => {
+    const db = await cds.connect.to('db');
+    try {
+        const invoiceUrl: Order.IInvoices = (await cds.run(SELECT.one.from(db.entities[Order.Entity.Invoices]).where(
+            { Order_OrderNr: OrderNr, InvoiceNr: InvoiceNr }).columns('InvoiceUrl'))).InvoiceUrl;
+        console.log(invoiceUrl);
+        const HIPInvoiceAxios = getHIPInvoiceAxios();
+        try {
+            const pdf: any = (await HIPInvoiceAxios({
+                method: 'GET',
+                url: `/${invoiceUrl}`,
+                responseType: 'arraybuffer',
+                headers: {
+                    'apikey': '36cbc92c8f5249fcbc346c4a37df4a36' // FIXME This should not be here
+                }
+            })).data;
+            return Buffer.from(pdf).toString('base64');
+            // var streamBuffers = require('stream-buffers');
+            // var myWritableStreamBuffer = new streamBuffers.WritableStreamBuffer({
+            //     initialSize: (100 * 1024),   // start at 100 kilobytes.
+            //     incrementAmount: (10 * 1024) // grow by 10 kilobytes each time buffer overflows.
+            // });
+            // myWritableStreamBuffer.write(Buffer.from(pdf).toString('base64'));
+            // return myWritableStreamBuffer.getContents();
+            // let memStream = new MemoryStream(null, { readable: false });
+            // pdf.pipe(memStream);
+            // pdf.on('end', function() {
+            //     console.log(memStream.toString());
+            // });
+            // console.log('ok');
+            // return {
+            //     value: Buffer.from(pdf).toString('base64'),
+            //     '*@odata.mediaContentType': 'application/pdf'
+            // }
+            // return Buffer.from(pdf).toString("base64");
+        } catch (error) {
+            console.log(error);
+        }
+    } catch (error) {
+        console.log("error");
+    }
+
+    return '';
+}
+
+
 /* Helper methods */
 const getFilterStatus = (req: Request): string | undefined => {
     // @ts-ignore
@@ -229,16 +301,16 @@ const getFilterStatus = (req: Request): string | undefined => {
     }
     return;
 }
-const transformToDetails = (orderDetails: hip.IOrderDetails): Order.IOrder => {
+const transformToDetails = (orderDetails: hip.IOrderDetails, customer: Order.ICustomer): Order.IOrder => {
     const orderNr = orderDetails.orderHeader.orderDocumentSAP;
     return {
         OrderNr: orderNr,
         OrderDate: new Date(orderDetails.orderHeader.orderDate),
         Status: orderDetails.orderHeader.orderStatus,
         CustomerReference: orderDetails.orderHeader.orderCustomerRef,
-        SalesOrg: orderDetails.orderHeader.salesOrg,
-        SoldTo: '',
-        SoldToName: '',
+        SalesOrg: customer.SalesOrg,
+        SoldTo: customer.SoldTo,
+        SoldToName: customer.SoldToName,
         TotalAmount: orderDetails.orderTotal.orderNetTotal,
         TotalCurrency: orderDetails.orderTotal.currency,
         LineItems: orderDetails.lineItems.map(l => ({
@@ -307,7 +379,7 @@ const transformToDetails = (orderDetails: hip.IOrderDetails): Order.IOrder => {
             // OrderNr: orderNr,
             InvoiceNr: i.invoiceNumber,
             InvoiceUrl: RegEx.invoice.getId.exec(i.link)?.[1] || '',
-            InvoicePdf: ''
+            // Pdf: ''
         })) : undefined
     };
 }
@@ -320,25 +392,30 @@ const enrichWithInvoices = async (order: Order.IOrder) => {
             }
         })
     });
-    if (order.Invoices) {
-        const HIPInvoiceAxios = getHIPInvoiceAxios();
-        let promiseChain: Promise<AxiosResponse<any>>[] = [];
-        order.Invoices?.forEach(i => {
-            promiseChain.push(HIPInvoiceAxios({
-                method: 'GET',
-                url: `/${i.InvoiceUrl}`,
-                headers: {
-                    'apikey': '36cbc92c8f5249fcbc346c4a37df4a36' // FIXME This should not be here
-                }
-            }));
-        });
-        await Promise.all(promiseChain).then((results) => {
-            results.forEach(r => {
-                let test = order.Invoices?.find(o => (o.InvoiceUrl === r.config.url?.replace('/', '')));
-                if (test) test.InvoicePdf = r.data;
-            });
-        });
-    }
+    // if (order.Invoices) {
+    //     const HIPInvoiceAxios = getHIPInvoiceAxios();
+    //     let promiseChain: Promise<AxiosResponse<any>>[] = [];
+    //     order.Invoices?.forEach(i => {
+    //         promiseChain.push(HIPInvoiceAxios({
+    //             method: 'GET',
+    //             url: `/${i.InvoiceUrl}`,
+    //             responseType: 'arraybuffer', 
+    //             headers: {
+    //                 'apikey': '36cbc92c8f5249fcbc346c4a37df4a36' // FIXME This should not be here
+    //             }
+    //         }));
+    //     });
+    //     await Promise.all(promiseChain).then((results) => {
+    //         results.forEach(r => {
+    //             let test = order.Invoices?.find(o => (o.InvoiceUrl === r.config.url?.replace('/', '')));
+    //             // if (test) test.InvoicePdf = r.data;
+    //             if (test) {
+    //                 console.log(Buffer.from(r.data).toString("base64"));
+    //                 test.InvoicePdf = Buffer.from(r.data).toString("base64");
+    //             }
+    //         });
+    //     });
+    // }
     return order;
 }
 
