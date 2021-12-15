@@ -24,6 +24,26 @@
         "${workspaceFolder}/srv/dist/**"
       ],
       "preLaunchTask": "build"
+    },
+    {
+      "name": "cds run (hana)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/.vscode/cds",
+      "args": [
+        "run",
+        "--production"
+      ], // the leading "--" arg ensures it works with as well as without debugging
+      "internalConsoleOptions": "openOnSessionStart",
+      "console": "internalConsole",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "autoAttachChildProcesses": true,
+      "outFiles": [
+        "${workspaceFolder}/srv/dist/**"
+      ],
+      "preLaunchTask": "build"
     }
   ]
 }
