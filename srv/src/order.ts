@@ -1,4 +1,4 @@
-import cds, { update } from "@sap/cds";
+import cds from "@sap/cds";
 import { Request } from "@sap/cds/apis/services";
 import { Authorisation } from "./helpers/authorisation";
 import { getHIPInvoiceAxios, getHIPOrderAxios } from "./helpers/axios";
@@ -22,9 +22,7 @@ class OrderService extends cds.ApplicationService {
         /* Only share live data for Customers since this can be updated on the fly */
         this.on("READ", "Customer", async (req: Request) => {
             try {
-                // FIXME this should call auth service but can't test local
-                // const customer: Order.ICustomer = { UserName: 'gorisni@cronos.be', SoldTo: '100171357', SoldToName: 'Cramo AS', SalesOrg: 'SE20' };
-                // return [customer];
+                // return [{ UserName: 'gorisni@cronos.be', SoldTo: '100171357', SoldToName: 'Cramo AS', SalesOrg: 'SE20' }];
                 return await Authorisation.getAuthorisation().getCustomers(req);
             } catch (e) {
                 if (e instanceof Error) {
@@ -34,9 +32,9 @@ class OrderService extends cds.ApplicationService {
             }
             return;
         });
-        this.on("READ", "Status", async (req: Request) => {
-            return [{ Status: 'Processing' }, { Status: 'Confirmed' }, { Status: 'Shipping' }, { Status: 'Invoiced' }, { Status: 'Complete' }, { Status: 'Cancelled' }];
-        })
+        // this.on("READ", "Status", async (req: Request) => {
+        //     return [{ Status: 'Processing' }, { Status: 'Confirmed' }, { Status: 'Shipping' }, { Status: 'Invoiced' }, { Status: 'Complete' }, { Status: 'Cancelled' }];
+        // })
         /* Retrieve the Order information beforehand, store it in the HANA db and use it for the response (read) */
         this.before("READ", "Order", async (req: Request) => {
             try {
@@ -48,14 +46,14 @@ class OrderService extends cds.ApplicationService {
                     const status = getFilterStatus(req);
                     /* Check if the request for orders contains a status and if that status is for the history */
                     if (status && status === STATUS_DELIVERED) {
-                        req.reject(501, `You cannot request order history yet.`); // TODO This should call the order history API in the future
+                        throw new OrderError(`You cannot request order history yet.`, 501, ErrorType.LOGIC, ''); // TODO This should call the order history API in the future
                     } else {
-                        /* Check if the user has access to request orders for the customer in the filtering */
-                        // FIXME
-                        const customer: Order.ICustomer | undefined = await Authorisation.getAuthorisation().checkCustomerIsAllowed(req);
-                        // const customer: Order.ICustomer = { UserName: 'gorisni@cronos.be', SoldTo: '100171357', SoldToName: 'Cramo AS', SalesOrg: 'SE20' };
-                        if (customer) {
-                            const orders = await getOrderHeaders(req, customer);
+                        /* Retrieve the customers for which the user has access and is requesting */
+                        const customers: Order.ICustomer[] = await Authorisation.getAuthorisation().retrieveAuthorisedCustoemrs(req);
+                        if (customers.length > 0) {
+                            const orders = await getOrderHeaders(req, customers);
+                        } else {
+                            throw new OrderError(`No customers were selected, please select at least one customer.`, 501, ErrorType.LOGIC, '');
                         }
                     }
                 }
@@ -67,17 +65,8 @@ class OrderService extends cds.ApplicationService {
                 };
             }
         });
-        // this.on("setPrimary", async (req) => {
-        //     const db = await cds.connect.to('db')
-        //     let membership = await db.tx(req).run(req.query)
-        //     membership = asObject(membership)
-        //     const membershipObj = new CustomerMembership(membership.user_id!, membership.customer_id!, req)
-        //     await membershipObj.setPrimary();
-        //     return membership;
-        // })
         // this.on('getInvoice', async (req: Request) => {
         //     if (typeof req.params[1] === 'object') {
-
         //         return getInvoice(req, Order_OrderNr, InvoiceNr);
         //     }
         // });
@@ -97,76 +86,74 @@ class OrderService extends cds.ApplicationService {
 }
 
 /* Methods for retrieving the orders for a customer */
-const getOrderHeaders = async (req: Request, customer: Order.ICustomer) => {
+const getOrderHeaders = async (req: Request, customers: Order.ICustomer[]) => {
     try {
-        const db = await cds.connect.to('db');
-        let yesterday = (new Date(new Date().getTime() - 24 * 60 * 60 * 1000)).toISOString();
-        const order: Order.IOrder = await cds.run(SELECT.one.from(db.entities['Orders']).where(
-            { SoldTo: customer.SoldTo, SalesOrg: customer.SalesOrg, LastModified: { '>=': yesterday } }).columns('OrderNr'));
-        if (!order) {
-            await updateOrderHeaders(req, customer);
-        }
+        const customersToUpdate = await getCustomersToUpdate(customers);
+        await updateOrderHeaders(req, customersToUpdate);
     } catch (error) {
         console.log(error.message);
     }
 }
-const updateOrderHeaders = async (req: Request, customer: Order.ICustomer) => {
-    const orders = await getOrdersFromAPI(req, customer);
-    await deleteOrderHeaders(req, customer);
-    await insertOrderHeaders(req, customer, orders);
+const updateOrderHeaders = async (req: Request, customers: Order.ICustomer[]) => {
+    const orders = await getOrdersFromAPI(req, customers);
+    await deleteOrderHeaders(req, customers);
+    await insertOrderHeaders(req, customers, orders);
 }
-const getOrdersFromAPI = async (req: Request, customer: Order.ICustomer): Promise<Order.IOrder[]> => {
-    try {
-        const HIPOrderAxios = getHIPOrderAxios();
-        const fromDate = new Date(new Date().setMonth(new Date().getMonth() - 6));
-        const answer = await HIPOrderAxios<hip.IOrder[]>({
-            method: 'GET',
-            url: `/?soldTo=${customer.SoldTo}&salesOrg=${customer.SalesOrg}&fromDate=${fromDate.toISOString().split('T')[0]}&toDate=${(new Date()).toISOString().split('T')[0]}`,
-            headers: {
-                'apikey': '36cbc92c8f5249fcbc346c4a37df4a36' // FIXME This should not be here
+const getOrdersFromAPI = async (req: Request, customers: Order.ICustomer[]): Promise<Order.IOrder[]> => {
+    let orders: Order.IOrder[] = [];
+    for (let n = 0; n < customers.length; n++) {
+        const customer = customers[n];
+        try {
+            const HIPOrderAxios = getHIPOrderAxios();
+            const fromDate = new Date(new Date().setMonth(new Date().getMonth() - 6));
+            const answer = await HIPOrderAxios<hip.IOrder[]>({
+                method: 'GET',
+                url: `/?soldTo=${customer.SoldTo}&salesOrg=${customer.SalesOrg}&fromDate=${fromDate.toISOString().split('T')[0]}&toDate=${(new Date()).toISOString().split('T')[0]}`,
+                headers: {
+                    'apikey': '36cbc92c8f5249fcbc346c4a37df4a36' // FIXME This should not be here
+                }
+            });
+            orders = orders.concat(answer.data.map((o) => {
+                return {
+                    OrderNr: o.orderDocumentSAP,
+                    OrderDate: new Date(o.orderDate),
+                    Status: o.status,
+                    CustomerReference: o.orderCustomerRef,
+                    SalesOrg: customer.SalesOrg,
+                    SoldTo: customer.SoldTo,
+                    SoldToName: customer.SoldToName,
+                    TotalAmount: o.totalValue,
+                    TotalCurrency: o.currency
+                }
+            }));
+        } catch (error) {
+            if (error instanceof Error) {
+                const e: Error = <any>error;
+                throw new OrderError(`Retrieving data from HIP did not succeed for customer: ${customer.SoldToName}.`, 503, ErrorType.API, e.message);
             }
-        });
-        return answer.data.map((o) => {
-            return {
-                OrderNr: o.orderDocumentSAP,
-                OrderDate: new Date(o.orderDate),
-                Status: o.status,
-                CustomerReference: o.orderCustomerRef,
-                SalesOrg: customer.SalesOrg,
-                SoldTo: customer.SoldTo,
-                SoldToName: customer.SoldToName,
-                TotalAmount: o.totalValue,
-                TotalCurrency: o.currency
-            }
-        });
-    } catch (error) {
-        if (error instanceof Error) {
-            const e: Error = <any>error;
-            throw new OrderError(`Retrieving data from HIP did not succeed for customer: ${customer.SoldToName}.`, 503, ErrorType.API, e.message);
         }
     }
-    return [];
+    return orders;
 }
-const deleteOrderHeaders = async (req: Request, customer: Order.ICustomer) => {
+const deleteOrderHeaders = async (req: Request, customers: Order.ICustomer[]) => {
     try {
         const db = await cds.connect.to('db');
-        await db.tx(req).run(DELETE.from(db.entities[Order.Entity.Orders]).where(
-            { SoldTo: customer.SoldTo, SalesOrg: customer.SalesOrg }));
+        await db.tx(req).run(DELETE.from(db.entities[Order.Entity.Orders]).where(createWhereStatement(customers)));
     } catch (error) {
         if (error instanceof Error) {
             const e: Error = <any>error;
-            throw new OrderError(`Deleting the order headers for ${customer.SoldToName} did not succeed`, 500, ErrorType.HANA, e.message);
+            throw new OrderError(`Deleting the order headers for certain customers did not succeed`, 500, ErrorType.HANA, e.message);
         }
     }
 }
-const insertOrderHeaders = async (req: Request, customer: Order.ICustomer, orders: Order.IOrder[]) => {
+const insertOrderHeaders = async (req: Request, customers: Order.ICustomer[], orders: Order.IOrder[]) => {
     try {
         const db = await cds.connect.to('db');
         await db.tx(req).run(INSERT.into(db.entities[Order.Entity.Orders]).entries(orders));
     } catch (error) {
         if (error instanceof Error) {
             const e: Error = <any>error;
-            throw new OrderError(`Inserting the order headers for ${customer.SoldToName} did not succeed`, 500, ErrorType.HANA, e.message);
+            throw new OrderError(`Inserting the order headers for certain customers did not succeed`, 500, ErrorType.HANA, e.message); // FIXME customers??
         }
     }
 }
@@ -210,19 +197,19 @@ const getOrderDetailsFromAPI = async (req: Request, orderNr: string): Promise<hi
     return;
 }
 const deleteOrderDetails = async (req: Request, orderNr: string) => {
-    try {
-        const db = await cds.connect.to('db');
-        await db.tx(req).run(DELETE.from(db.entities[Order.Entity.Invoices]).where({ OrderNr: orderNr }));
-        await db.tx(req).run(DELETE.from(db.entities[Order.Entity.DeliveryItems]).where({ OrderNr: orderNr }));
-        await db.tx(req).run(DELETE.from(db.entities[Order.Entity.Deliveries]).where({ OrderNr: orderNr }));
-        await db.tx(req).run(DELETE.from(db.entities[Order.Entity.LineItems]).where({ OrderNr: orderNr }));
-        // await db.tx(req).run(DELETE.from(db.entities[Order.Entity.OrderDetails]).where({ OrderNr: orderNr }));
-    } catch (error) {
-        if (error instanceof Error) {
-            const e: Error = <any>error;
-            throw new OrderError(`Deleting the order details for ${orderNr} did not succeed`, 500, ErrorType.HANA, e.message);
-        }
-    }
+    // try {
+    //     const db = await cds.connect.to('db');
+    //     await db.tx(req).run(DELETE.from(db.entities[Order.Entity.Invoices]).where({ OrderNr: orderNr }));
+    //     await db.tx(req).run(DELETE.from(db.entities[Order.Entity.DeliveryItems]).where({ OrderNr: orderNr }));
+    //     await db.tx(req).run(DELETE.from(db.entities[Order.Entity.Deliveries]).where({ OrderNr: orderNr }));
+    //     await db.tx(req).run(DELETE.from(db.entities[Order.Entity.LineItems]).where({ OrderNr: orderNr }));
+    //     // await db.tx(req).run(DELETE.from(db.entities[Order.Entity.OrderDetails]).where({ OrderNr: orderNr }));
+    // } catch (error) {
+    //     if (error instanceof Error) {
+    //         const e: Error = <any>error;
+    //         throw new OrderError(`Deleting the order details for ${orderNr} did not succeed`, 500, ErrorType.HANA, e.message);
+    //     }
+    // }
 }
 const insertOrderDetails = async (req: Request, orderNr: string, order: Order.IOrder) => {
     try {
@@ -378,7 +365,7 @@ const transformToDetails = (orderDetails: hip.IOrderDetails, customer: Order.ICu
         Invoices: orderDetails.payment.invoiceLink.length > 0 ? orderDetails.payment.invoiceLink.map(i => ({
             // OrderNr: orderNr,
             InvoiceNr: i.invoiceNumber,
-            InvoiceUrl: RegEx.invoice.getId.exec(i.link)?.[1] || '',
+            InvoiceUrl: `https://google.com/${RegEx.invoice.getId.exec(i.link)?.[1]}` || '',
             // Pdf: ''
         })) : undefined
     };
@@ -419,4 +406,19 @@ const enrichWithInvoices = async (order: Order.IOrder) => {
     return order;
 }
 
-module.exports = OrderService
+const getCustomersToUpdate = async (customers: Order.ICustomer[]): Promise<Order.ICustomer[]> => {
+    const db = await cds.connect.to('db');
+    let yesterday = (new Date(new Date().getTime() - 24 * 60 * 60 * 1000)).toISOString();
+    return customers.filter(async c => {
+        const order: Order.IOrder = await cds.run(SELECT.one.from(db.entities[Order.Entity.Orders]).where(
+            { SoldTo: c.SoldTo, SalesOrg: c.SalesOrg, LastModified: { '>=': yesterday } }).columns('OrderNr').orderBy('LastModified'));
+        if (!order) {
+            return true;
+        }
+        return false;
+    });
+}
+const createWhereStatement = (customers: Order.ICustomer[]): any => {
+    return { SoldTo: { in: customers.map(c => (c.SoldTo)) } };
+}
+module.exports = OrderService;

@@ -102,13 +102,11 @@ export namespace Order {
     }
 
     export enum Entity {
-        Customer = "Customer",
-        Deliveries = "Deliveries",
-        DeliveryItems = "DeliveryItems",
-        Invoices = "Invoices",
-        LineItems = "LineItems",
-        Status = "Status",
-        Orders = "Orders"
+        Deliveries = "mac.mw.order.Deliveries",
+        DeliveryItems = "mac.mw.order.DeliveryItems",
+        Invoices = "mac.mw.order.Invoices",
+        LineItems = "mac.mw.order.LineItems",
+        Orders = "mac.mw.order.Orders"
     }
 }
 
