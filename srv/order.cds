@@ -11,9 +11,7 @@ service Order @(requires : 'authenticated-user') {
     };
 
     @readonly
-    entity Status {
-        Status : String;
-    }
+    entity Status as projection on order.Status;
 
     @readonly
     entity Order    as projection on order.Orders excluding {
@@ -26,21 +24,8 @@ service Order @(requires : 'authenticated-user') {
     // } actions {
     //     function getInvoice(orderNr : String, invoiceNr : String) returns String
     }
-    // extend Order with @odata.draft.enabled: null;
 
     // entity Invoices as projection on order.Invoices actions {
     //     action getInvoice() returns Binary;
     // };
-
-// @readonly
-// entity LineItem   as projection on order.LineItems;
-
-// @readonly
-// entity Invoice   as projection on order.Invoices;
-
-// @readonly
-// entity Deliverie as projection on order.Deliveries;
-
-// @readonly
-// entity Item      as projection on order.DeliveryItems;
 }
