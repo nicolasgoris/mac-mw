@@ -3,7 +3,7 @@ using Order from './order';
 annotate Order.Order with @(
     UI           : {
         SelectionFields                 : [
-            SoldTo,
+            SoldToName,
             Status,
         ],
         LineItem                        : [
@@ -399,7 +399,7 @@ annotate Order.Order with @(
             $Type                   : 'Capabilities.FilterRestrictionsType',
             NonFilterableProperties : [
                 // DraftAdministrativeData, // Does not do anything :(
-                SoldToName,
+                // SoldTo,
                 SalesOrg,
                 DeliveryInformation_Id,
                 DeliveryInformation_Name,
@@ -508,10 +508,6 @@ annotate Order.LineItems with @(
     },
 );
 
-// annotate Order.LineItems with @Common : {
-//     Label #OrderDate : '{@i18n>orderDate}',
-//  }
-
 annotate Order.Deliveries with @(
     UI           : {
         LineItem   : [
@@ -571,21 +567,16 @@ annotate Order.Invoices with @(
             Value : InvoiceNr,
             Label : '{@i18n>invoiceNr}',
         },
-        {
-            $Type  : 'UI.DataFieldForAction',
-            Action : 'Order.getInvoice',
-            Label  : '{@i18n>downloadInvoice}',
-            Inline : true,
-        },
+        // {
+        //     $Type  : 'UI.DataFieldForAction',
+        //     Action : 'Order.getInvoice',
+        //     Label  : '{@i18n>downloadInvoice}',
+        //     Inline : true,
+        // },
         {
             $Type : 'UI.DataField',
             Value : InvoiceUrl,
-            ![@UI.Hidden],
-        },
-        {
-            $Type : 'UI.DataField',
-            Value : Pdf,
-            ![@UI.Hidden],
+            Label : '{@i18n>invoiceUrl}'
         },
         {
             $Type : 'UI.DataField',
@@ -599,7 +590,7 @@ annotate Order.Invoices with @(
             NonSortableProperties : [
                 Order_OrderNr,
                 InvoiceUrl,
-                Pdf
+            // Pdf
             ],
         },
         SearchRestrictions : {
@@ -643,7 +634,10 @@ annotate Order.DeliveryItems with @(
     Capabilities : {
         SortRestrictions   : {
             $Type                 : 'Capabilities.SortRestrictionsType',
-            NonSortableProperties : [Delivery_TrackingNr, Delivery_Order_OrderNr, ],
+            NonSortableProperties : [
+                Delivery_TrackingNr,
+                Delivery_Order_OrderNr,
+            ],
         },
         SearchRestrictions : {
             $Type      : 'Capabilities.SearchRestrictionsType',
@@ -653,7 +647,7 @@ annotate Order.DeliveryItems with @(
 );
 
 annotate Order.Order with {
-    SoldTo            @Common : {
+    SoldToName        @Common : {
         ValueListWithFixedValues,
         Label     : '{@i18n>soldTo}',
         ValueList : {
@@ -688,7 +682,6 @@ annotate Order.Order with {
     OrderDate         @Common : {Label : '{@i18n>orderDate}', };
     OrderNr           @Common : {Label : '{@i18n>orderNr}', };
     CustomerReference @Common : {Label : '{@i18n>customerRef}', };
-    SoldToName        @Common : {Label : '{@i18n>soldTo}', };
     TotalAmount       @Common : {Label : '{@i18n>totalAmount}', };
     TotalCurrency     @Common : {Label : '{@i18n>currency}', };
 };
